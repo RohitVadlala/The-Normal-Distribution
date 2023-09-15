@@ -1,0 +1,230 @@
+---
+title: "Lab : Normal Distribution"
+author: "Rohit Vadlala_U93298968"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(openintro)
+head(fastfood)
+```
+```{r}
+mcdonalds <- fastfood %>%
+  filter(restaurant == "Mcdonalds")
+dairy_queen <- fastfood %>%
+  filter(restaurant == "Dairy Queen")
+```
+
+
+### Exercise 1
+
+From the plots of distributions of the calories from fat of their menu offerings, it showed that they are nearly identical distributions.
+
+
+```{r}
+
+mcdAndDq <- rbind(mcdonalds, dairy_queen)
+
+mcdAndDq %>% 
+  ggplot(aes(cal_fat, color=restaurant,fill=restaurant)) +
+  geom_histogram(binwidth = 1) +
+  facet_grid(~restaurant) +
+  ylab("Frequency") +
+  xlab("Calories from fat") + 
+  ggtitle("Frequency histogram of calories from fat of menu items\nat McDonalds and Dairy Queen")
+
+mcdAndDq %>% 
+  ggplot(aes(cal_fat, restaurant, color=restaurant)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(height=0.1, alpha=0.5) +
+  xlab("Calories from fat") +
+  ylab("") +
+  ggtitle("Boxplot of Calories from fat of menu items\nfrom McDonalds and Dairy Queen")
+
+
+```
+
+
+### Exercise 2
+From the plot, it can be said that the data follows a relatively normal distribution.
+
+```{r}
+# Insert code for Exercise 2 here
+
+dqmean <- mean(dairy_queen$cal_fat)
+dqsd   <- sd(dairy_queen$cal_fat)
+
+ggplot(data = dairy_queen, aes(x = cal_fat)) +
+        geom_blank() +
+        geom_histogram(aes(y = ..density..), fill='lightblue') +
+        stat_function(fun = dnorm, args = c(mean = dqmean, sd = dqsd), col = "tomato")
+
+
+```
+
+
+### Exercise 3
+
+From the plot, it can be said that the almost all the points fall on the line or closer to the line. This plot is relatively identical to the probability plot for the real data.
+
+```{r}
+# Insert code for Exercise 3 here
+set.seed(42)
+
+dairy_queen %>%
+  ggplot(aes(sample = cal_fat)) + 
+  stat_qq()
+sim_norm <- rnorm(n = nrow(dairy_queen), mean = dqmean, sd = dqsd)
+
+
+
+dairy_queen %>% 
+  ggplot(aes(sample = sim_norm)) + 
+  stat_qq()+
+  stat_qq_line()
+
+qqnormsim(sample = cal_fat, data = dairy_queen)
+
+```
+
+
+### Exercise 4
+
+Yes, the normal probability plot for the calories from fat look similar to the plots created for the simulated data, these plots follow a nearly straight line pattern and it can be said that they are relatively normal.
+
+
+### Exercise 5
+
+
+When comparing the plots, i think the  calories from the fat of McDonalds’ menu items are more right skewed(Positively skewed) than that of the Dairy Queen plot. The probabilities of these two are not identical exactly, but they are reasonably closer enough. 
+
+The closer the distribution is to being normal, the more accurate the theoretical probabilities will be. Here, the calories from McDonald’s menu appear to come from a normal distribution.
+
+```{r}
+
+mcdonalds %>%
+  ggplot(aes(sample=cal_fat))+
+  stat_qq() +
+  stat_qq_line()
+
+ pnorm(q = 600, mean = dqmean, sd = dqsd)
+ 
+ dairy_queen %>% 
+  filter(cal_fat > 600) %>%
+  summarise(percent = n() / nrow(dairy_queen))
+ 
+```
+
+
+### Exercise 6
+
+Subway:
+0.1650259
+0.1911745
+
+Taco Bell:
+0.2604167	
+0.1826087	
+
+```{r}
+
+fastfood %>% mutate(fatCalPercentTotalCal = cal_fat/calories *100) %>% 
+  filter(fatCalPercentTotalCal <= 100) %>%  
+  ggplot(aes(fatCalPercentTotalCal, restaurant, color=restaurant)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(height=0.1, alpha=0.5) +
+  xlab("Calories (fat)") +
+  ylab("") +
+  ggtitle("Boxplots of percentage of total calories (fat)\n vs menu items (fast food restaurants)")
+
+fastfood %>% mutate(fatCalPercentTotalCal = cal_fat/calories *100) %>%  
+  filter(restaurant %in% c("Taco Bell", "Subway")) %>%  
+  ggplot(aes(fatCalPercentTotalCal, restaurant, color=restaurant)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(height=0.1, alpha=0.5) +
+  xlab("Percentage of total calories (fat)") +
+  ylab("") +
+  ggtitle("Boxplots of percentage of total calories (fat)\n vs menu items (from Taco Bell and Subway)")
+
+fastfood$restaurant <- as.factor(fastfood$restaurant)
+fastfood <- fastfood %>% mutate(fatCalPercentTotalCal = cal_fat/calories *100)
+
+fastfood %>%
+  mutate(fatCalPercentTotalCal = cal_fat/calories *100) %>%  
+  filter(restaurant %in% c("Taco Bell", "Subway")) %>%  
+  ggplot(aes(sample = fatCalPercentTotalCal, colour = factor(restaurant))) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("QQ-plots of calories(fat) as a percentage \nof total calories(from Subway and Taco Bell)")
+
+tacoBell <- fastfood %>% filter(restaurant == "Taco Bell")
+tacoBellMean <- mean(tacoBell$fatCalPercentTotalCal)
+tacoBellsd <- sd(tacoBell$fatCalPercentTotalCal)
+
+subway <- fastfood %>% filter(restaurant == "Subway")
+subwayMean <- mean(subway$fatCalPercentTotalCal)
+subwaySd <- sd(subway$fatCalPercentTotalCal)
+
+
+pnorm(q=15, subwayMean,subwaySd)
+
+subway %>% 
+  filter(fatCalPercentTotalCal < 15) %>%
+  summarise(percent = n() / nrow(subway))
+
+            
+pnorm(q=35, tacoBellMean,tacoBellsd)
+
+tacoBell %>% 
+  filter(fatCalPercentTotalCal < 35) %>%
+  summarise(percent = n() / nrow(tacoBell))
+```
+
+
+### Exercise 7
+
+From the plots, it can be said that the Burger King and Taco Bell have the most normal distributions of sodium content from their menu offerings.
+
+```{r}
+
+
+fastfood %>% 
+  ggplot(aes(sample = sodium)) + 
+  stat_qq()+
+  stat_qq_line()+
+  facet_wrap(~restaurant)
+
+fastfood %>% 
+  filter(restaurant %in% c("Taco Bell", "Burger King")) %>%
+  ggplot(aes(sample = sodium)) + 
+  stat_qq()+
+  stat_qq_line()+
+  facet_wrap(~restaurant)
+```
+
+
+
+
+### Exercise 8
+
+
+With the discrete variables there are stepwise patterns that appear. It is probably because of the units of sodium are large in number and rounding them to the nearest possible numbers like ten or hundred is less significant and it is more likely.
+
+
+### Exercise 9
+
+From the plot, it is indicating that the distribution is rightly skewed or positively skewed.
+
+
+```{r}
+fastfood %>% 
+  filter(restaurant == "Taco Bell") %>%
+  ggplot(aes(sample = total_carb)) + 
+  stat_qq()+
+  stat_qq_line()
+
+hist(tacoBell$total_carb)
+```
+
